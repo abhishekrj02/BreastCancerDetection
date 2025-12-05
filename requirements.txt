@@ -1,0 +1,5 @@
+gradio
+pillow>=10
+numpy>=1.26
+tensorflow>=2.10
+
