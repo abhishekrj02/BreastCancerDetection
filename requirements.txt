@@ -1,5 +1,8 @@
-gradio
+flask
+python-dotenv
+google-genai
 pillow>=10
 numpy>=1.26
 tensorflow>=2.10
-
+opencv-python
+googledrivedownloader

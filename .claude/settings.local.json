@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"F:\\\\MajorProjectFinal\" status)",
+      "Bash(git -C \"F:\\\\MajorProjectFinal\" diff)",
+      "Bash(git -C \"F:\\\\MajorProjectFinal\" log --oneline -5)"
+    ]
+  }
+}

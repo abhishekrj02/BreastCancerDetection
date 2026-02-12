@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BreastGuard AI - Breast Cancer Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-ribbon"></i>
+            <span>BreastGuard AI</span>
+        </div>
+        <div class="nav-links">
+            <a href="#upload-section" class="nav-link">Detection</a>
+            <a href="#" class="nav-link" id="nav-chat-btn">
+                <i class="fas fa-comments"></i> Chat Assistant
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>AI-Powered Breast Cancer Detection</h1>
+            <p>Upload a mammogram image for instant AI analysis powered by DenseNet201 deep learning, with health insights from Gemini AI.</p>
+            <a href="#upload-section" class="btn btn-primary">
+                <i class="fas fa-microscope"></i> Start Analysis
+            </a>
+        </div>
+        <div class="hero-visual">
+            <div class="hero-icon-ring">
+                <i class="fas fa-heartbeat"></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Section -->
+    <section id="upload-section" class="section">
+        <div class="container">
+            <h2 class="section-title">Upload Mammogram</h2>
+            <p class="section-subtitle">Drag & drop or click to upload a mammogram image for analysis</p>
+
+            <div class="upload-area" id="upload-area">
+                <input type="file" id="file-input" accept="image/*" hidden>
+                <div class="upload-placeholder" id="upload-placeholder">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Drop your image here</h3>
+                    <p>or click to browse files</p>
+                    <span class="upload-hint">Supports JPG, PNG, BMP</span>
+                </div>
+                <div class="upload-preview hidden" id="upload-preview">
+                    <img id="preview-img" src="" alt="Uploaded mammogram">
+                    <button class="btn-remove" id="remove-btn" title="Remove image">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-analyze" id="analyze-btn" disabled>
+                <i class="fas fa-search-plus"></i> Analyze Image
+            </button>
+
+            <!-- Loading -->
+            <div class="loader hidden" id="loader">
+                <div class="spinner"></div>
+                <p>Analyzing mammogram...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results-section" class="section hidden">
+        <div class="container">
+            <h2 class="section-title">Detection Results</h2>
+
+            <div class="results-grid">
+                <!-- Diagnosis Card -->
+                <div class="result-card diagnosis-card" id="diagnosis-card">
+                    <div class="diagnosis-badge" id="diagnosis-badge">
+                        <i class="fas fa-stethoscope"></i>
+                        <span id="diagnosis-text">--</span>
+                    </div>
+                </div>
+
+                <!-- Benign Card -->
+                <div class="result-card">
+                    <h3>Benign</h3>
+                    <div class="progress-ring-container">
+                        <svg class="progress-ring" viewBox="0 0 120 120">
+                            <circle class="progress-ring-bg" cx="60" cy="60" r="52"/>
+                            <circle class="progress-ring-fill benign-ring" id="benign-ring" cx="60" cy="60" r="52"
+                                    stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+                        </svg>
+                        <div class="progress-ring-text">
+                            <span id="benign-pct">0</span>%
+                        </div>
+                    </div>
+                    <p class="result-label">Non-cancerous probability</p>
+                </div>
+
+                <!-- Malignant Card -->
+                <div class="result-card">
+                    <h3>Malignant</h3>
+                    <div class="progress-ring-container">
+                        <svg class="progress-ring" viewBox="0 0 120 120">
+                            <circle class="progress-ring-bg" cx="60" cy="60" r="52"/>
+                            <circle class="progress-ring-fill malignant-ring" id="malignant-ring" cx="60" cy="60" r="52"
+                                    stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+                        </svg>
+                        <div class="progress-ring-text">
+                            <span id="malignant-pct">0</span>%
+                        </div>
+                    </div>
+                    <p class="result-label">Cancerous probability</p>
+                </div>
+            </div>
+
+            <!-- Detailed Breakdown -->
+            <div class="detail-card">
+                <h3><i class="fas fa-chart-bar"></i> Detailed Breakdown by Density</h3>
+                <div class="detail-bars" id="detail-bars"></div>
+            </div>
+
+            <!-- Get AI Summary Button -->
+            <button class="btn btn-gemini" id="summary-btn">
+                <i class="fas fa-brain"></i> Get AI Health Summary from Gemini
+            </button>
+        </div>
+    </section>
+
+    <!-- AI Summary Section -->
+    <section id="summary-section" class="section hidden">
+        <div class="container">
+            <h2 class="section-title"><i class="fas fa-notes-medical"></i> AI Health Summary</h2>
+            <div class="summary-loader hidden" id="summary-loader">
+                <div class="spinner"></div>
+                <p>Gemini AI is preparing your health summary...</p>
+            </div>
+            <div class="summary-content" id="summary-content"></div>
+        </div>
+    </section>
+
+    <!-- Chatbot -->
+    <div class="chat-toggle" id="chat-toggle">
+        <i class="fas fa-comments"></i>
+    </div>
+
+    <div class="chat-panel hidden" id="chat-panel">
+        <div class="chat-header">
+            <div class="chat-header-info">
+                <i class="fas fa-robot"></i>
+                <span>BreastGuard Assistant</span>
+            </div>
+            <button class="chat-close" id="chat-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-msg bot">
+                <div class="chat-msg-content">
+                    Hello! I'm your breast health assistant powered by Gemini AI. I can answer questions about breast cancer, mammograms, screening guidelines, and healthy practices. How can I help you today?
+                </div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Ask about breast health..." autocomplete="off">
+            <button class="chat-send" id="chat-send">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>BreastGuard AI &mdash; AI-powered breast cancer screening tool. <strong>Not a substitute for professional medical diagnosis.</strong></p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

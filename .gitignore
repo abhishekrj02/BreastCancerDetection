@@ -1,5 +1,7 @@
 /model
 /.gradio
 /weight
-/_pycache__
-
+/__pycache__
+*.pyc
+.env
+/logs
