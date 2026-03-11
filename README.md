@@ -151,6 +151,93 @@ The dataset contains breast mammography images (224x224x3) labeled by:
 
 Higher breast density is associated with higher breast cancer risk and makes mammograms harder to read.
 
+## System Architecture Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                            START                                     │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                       DATA COLLECTION                                │
+│  • 5,724 mammogram images (224×224×3 RGB)                           │
+│  • 8 classes: Benign/Malignant × Breast Density 1–4                 │
+│  • Highly imbalanced (54 – 1,728 samples per class)                 │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                       PRE-PROCESSING                                 │
+│  • Resize to 224×224 px                                             │
+│  • Sharpening filter (Laplacian kernel)                             │
+│  • Normalize pixel values to [0, 1]                                 │
+│  • Augmentation (rotation, shift, shear, zoom, horizontal flip)     │
+│  • Class weighting to handle imbalance                              │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                     MODEL ARCHITECTURE                               │
+│                                                                      │
+│   Input (224×224×3)                                                  │
+│        │                                                             │
+│        ▼                                                             │
+│   DenseNet201 (ImageNet weights, last 5 layers unfrozen)            │
+│        │  ← Feature extraction via dense connections                 │
+│        ▼                                                             │
+│   Global Max Pooling                                                 │
+│        ▼                                                             │
+│   BatchNorm → Dense(2048, ReLU) [L1+L2 reg]                        │
+│        ▼                                                             │
+│   BatchNorm → Dense(8, Softmax)                                      │
+│        │                                                             │
+│        ▼                                                             │
+│   8 Output Classes (Benign/Malignant × Density 1–4)                 │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         TRAINING                                     │
+│  • Optimizer: Adam (lr = 1e-4)                                      │
+│  • Loss: Categorical Crossentropy (label smoothing = 0.1)           │
+│  • Callbacks: EarlyStopping, ReduceLROnPlateau, ModelCheckpoint     │
+│  • Best weights saved automatically                                  │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                       EVALUATION                                     │
+│  • Test Accuracy: 88.5%  │  AUC-ROC: 0.934                         │
+│  • Per-class Precision, Recall, F1-Score                            │
+│  • Confusion matrix across all 8 classes                            │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                   INFERENCE (Web App)                                │
+│  Upload Mammogram → Preprocess → Predict                            │
+│        │                                                             │
+│        ├─► Benign / Malignant probability + per-density breakdown   │
+│        ├─► Animated visual results (progress rings, bars)           │
+│        │                                                             │
+│        ▼                                                             │
+│   ┌─────────────────────┐     ┌──────────────────────────┐          │
+│   │  AI Health Summary  │     │   Context-Aware Chatbot  │          │
+│   │  (Gemini 2.5 Flash) │     │   (Gemini 2.5 Flash)     │          │
+│   │  Risk assessment,   │     │   Knows detection result,│          │
+│   │  next steps, tips   │     │   answers health queries │          │
+│   └─────────────────────┘     └──────────────────────────┘          │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                              END                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Model Performance
 
 ### Dataset Split
