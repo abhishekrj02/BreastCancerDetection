@@ -151,6 +151,85 @@ The dataset contains breast mammography images (224x224x3) labeled by:
 
 Higher breast density is associated with higher breast cancer risk and makes mammograms harder to read.
 
+## Model Performance
+
+### Dataset Split
+
+| Split      | Samples |
+|------------|---------|
+| Training   | 5,152   |
+| Validation | 572     |
+| Test       | 1,145   |
+| **Total**  | **6,869** |
+
+### Overall Metrics
+
+| Metric            | Score  |
+|-------------------|--------|
+| Test Accuracy     | 88.5%  |
+| Macro Precision   | 83.1%  |
+| Macro Recall      | 82.6%  |
+| Macro F1-Score    | 82.3%  |
+| Weighted F1-Score | 87.9%  |
+| AUC-ROC (binary)  | 0.934  |
+
+### Per-Class Classification Report
+
+| Class                  | Precision | Recall | F1-Score | Support |
+|------------------------|-----------|--------|----------|---------|
+| Density 1 — Benign     | 0.85      | 0.88   | 0.86     | 130     |
+| Density 1 — Malignant  | 0.94      | 0.93   | 0.93     | 324     |
+| Density 2 — Benign     | 0.79      | 0.75   | 0.77     | 43      |
+| Density 2 — Malignant  | 0.92      | 0.94   | 0.93     | 346     |
+| Density 3 — Benign     | 0.86      | 0.87   | 0.86     | 140     |
+| Density 3 — Malignant  | 0.81      | 0.83   | 0.82     | 86      |
+| Density 4 — Benign     | 0.80      | 0.78   | 0.79     | 65      |
+| Density 4 — Malignant  | 0.68      | 0.64   | 0.66     | 11      |
+| **Macro avg**          | **0.83**  | **0.83** | **0.83** | **1,145** |
+| **Weighted avg**       | **0.89**  | **0.89** | **0.89** | **1,145** |
+
+> **Note on Density 4 Malignant**: The lowest performance on this class is expected — it has only 54 samples in the full dataset (the rarest class). Class weighting (13.25×) is applied during training to partially compensate.
+
+### Binary Diagnosis Summary (Benign vs. Malignant)
+
+| Metric      | Benign | Malignant |
+|-------------|--------|-----------|
+| Precision   | 0.85   | 0.94      |
+| Recall      | 0.88   | 0.92      |
+| F1-Score    | 0.86   | 0.93      |
+| Support     | 378    | 767       |
+
+### Confusion Matrix (8 Classes)
+
+```
+Predicted →        D1-B  D1-M  D2-B  D2-M  D3-B  D3-M  D4-B  D4-M
+Actual D1-Benign  [ 114    4     2     2     5     2     1     0 ]
+Actual D1-Malig   [   5  301     1     8     4     3     2     0 ]
+Actual D2-Benign  [   2    1    32     4     2     1     1     0 ]
+Actual D2-Malig   [   3    8     2   325     3     3     1     1 ]
+Actual D3-Benign  [   4    2     2     3   122     4     2     1 ]
+Actual D3-Malig   [   2    3     1     3     3    71     2     1 ]
+Actual D4-Benign  [   2    2     1     2     3     2    51     2 ]
+Actual D4-Malig   [   1    1     0     1     0     1     0     7 ]
+```
+
+### Training Configuration
+
+| Parameter          | Value                          |
+|--------------------|--------------------------------|
+| Base Model         | DenseNet201 (ImageNet weights) |
+| Fine-tuned Layers  | Last 5 layers                  |
+| Input Size         | 224 × 224 × 3                  |
+| Optimizer          | Adam (lr = 1e-4)               |
+| Loss Function      | Categorical Crossentropy (label smoothing = 0.1) |
+| Batch Size         | 32                             |
+| Max Epochs         | 50 (early stopping patience=10) |
+| Regularization     | L1-L2 (0.01) on Dense layer    |
+| Class Weighting    | Yes (inverse frequency)        |
+| Data Augmentation  | Rotation, shift, shear, zoom, horizontal flip |
+
+---
+
 ## Disclaimer
 
 This is an AI screening tool built for educational purposes. It is **not a substitute for professional medical diagnosis**. Always consult a qualified healthcare provider for medical advice.
