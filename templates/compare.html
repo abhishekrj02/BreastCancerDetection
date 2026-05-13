@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Scans — BreastGuard AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="{{ url_for('index') }}" class="nav-brand">
+            <i class="fas fa-ribbon"></i><span>BreastGuard AI</span>
+        </a>
+        <div class="nav-links">
+            <a href="{{ url_for('index') }}" class="nav-link"><i class="fas fa-microscope"></i> Detection</a>
+            <a href="{{ url_for('compare') }}" class="nav-link active"><i class="fas fa-columns"></i> Compare</a>
+            <a href="{{ url_for('dashboard') }}" class="nav-link"><i class="fas fa-th-large"></i> Dashboard</a>
+            {% if current_user.role in ('doctor', 'admin') %}
+            <a href="{{ url_for('doctor_dashboard') }}" class="nav-link"><i class="fas fa-user-md"></i> Doctor View</a>
+            {% endif %}
+            <div class="nav-user">
+                <span><i class="fas fa-user-circle"></i> {{ current_user.username }}</span>
+                <a href="{{ url_for('auth.logout') }}" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="dash-hero" style="background:linear-gradient(135deg,#FDE8F4,#fff,#EDF6FF)">
+        <div class="container">
+            <h1><i class="fas fa-columns"></i> Side-by-Side Comparison</h1>
+            <p>Upload two mammograms to compare their AI analysis results</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="compare-grid">
+
+            <!-- Panel A -->
+            <div class="compare-panel" id="panel-a">
+                <div class="compare-panel-header">
+                    <span class="panel-label panel-label-a">Scan A</span>
+                </div>
+
+                <div class="upload-area" id="upload-a">
+                    <input type="file" id="file-a" accept="image/*" hidden>
+                    <div class="upload-placeholder" id="placeholder-a">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Upload Scan A</h3>
+                        <p>Drop or click to browse</p>
+                    </div>
+                    <div class="upload-preview hidden" id="preview-a">
+                        <img id="img-a" src="" alt="Scan A">
+                        <button class="btn-remove" onclick="clearPanel('a')"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-analyze" id="analyze-a" disabled>
+                    <i class="fas fa-search-plus"></i> Analyze A
+                </button>
+                <div class="loader hidden" id="loader-a">
+                    <div class="spinner"></div><p>Analyzing...</p>
+                </div>
+
+                <div class="compare-results hidden" id="results-a">
+                    <div class="compare-diag-badge" id="diag-badge-a"></div>
+                    <div class="compare-pcts">
+                        <div class="cpct benign-cpct">
+                            <span class="cpct-val" id="benign-a">0</span>%
+                            <span class="cpct-label">Benign</span>
+                        </div>
+                        <div class="cpct malignant-cpct">
+                            <span class="cpct-val" id="malignant-a">0</span>%
+                            <span class="cpct-label">Malignant</span>
+                        </div>
+                    </div>
+                    <div id="heatmap-a-wrap" class="heatmap-wrap hidden">
+                        <img id="heatmap-a" src="" alt="Heatmap A">
+                        <span class="heatmap-label">Grad-CAM Heatmap</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VS divider -->
+            <div class="vs-divider">
+                <span>VS</span>
+            </div>
+
+            <!-- Panel B -->
+            <div class="compare-panel" id="panel-b">
+                <div class="compare-panel-header">
+                    <span class="panel-label panel-label-b">Scan B</span>
+                </div>
+
+                <div class="upload-area" id="upload-b">
+                    <input type="file" id="file-b" accept="image/*" hidden>
+                    <div class="upload-placeholder" id="placeholder-b">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Upload Scan B</h3>
+                        <p>Drop or click to browse</p>
+                    </div>
+                    <div class="upload-preview hidden" id="preview-b">
+                        <img id="img-b" src="" alt="Scan B">
+                        <button class="btn-remove" onclick="clearPanel('b')"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-analyze" id="analyze-b" disabled>
+                    <i class="fas fa-search-plus"></i> Analyze B
+                </button>
+                <div class="loader hidden" id="loader-b">
+                    <div class="spinner"></div><p>Analyzing...</p>
+                </div>
+
+                <div class="compare-results hidden" id="results-b">
+                    <div class="compare-diag-badge" id="diag-badge-b"></div>
+                    <div class="compare-pcts">
+                        <div class="cpct benign-cpct">
+                            <span class="cpct-val" id="benign-b">0</span>%
+                            <span class="cpct-label">Benign</span>
+                        </div>
+                        <div class="cpct malignant-cpct">
+                            <span class="cpct-val" id="malignant-b">0</span>%
+                            <span class="cpct-label">Malignant</span>
+                        </div>
+                    </div>
+                    <div id="heatmap-b-wrap" class="heatmap-wrap hidden">
+                        <img id="heatmap-b" src="" alt="Heatmap B">
+                        <span class="heatmap-label">Grad-CAM Heatmap</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Summary -->
+        <div class="compare-summary hidden" id="compare-summary">
+            <div class="container">
+                <h2 class="section-title"><i class="fas fa-balance-scale"></i> Comparison Summary</h2>
+                <div id="summary-text"></div>
+                <div class="compare-actions">
+                    <button class="btn btn-primary" onclick="downloadBoth()">
+                        <i class="fas fa-file-pdf"></i> Download Both Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>BreastGuard AI &mdash; Not a substitute for professional medical diagnosis.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/compare.js') }}"></script>
+</body>
+</html>

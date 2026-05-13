@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Page Not Found — BreastGuard AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-page">
+    <div class="auth-wrapper">
+        <div class="auth-card" style="text-align:center;padding:48px 32px;">
+            <div style="font-size:4rem;color:var(--pink);margin-bottom:16px;">
+                <i class="fas fa-search"></i>
+            </div>
+            <h2 style="color:var(--blue);">Page Not Found</h2>
+            <p style="color:var(--text-light);margin:12px 0 24px;">The page you're looking for doesn't exist.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                <i class="fas fa-home"></i> Go Home
+            </a>
+        </div>
+    </div>
+</body>
+</html>

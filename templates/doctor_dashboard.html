@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard — BreastGuard AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="{{ url_for('index') }}" class="nav-brand">
+            <i class="fas fa-ribbon"></i><span>BreastGuard AI</span>
+        </a>
+        <div class="nav-links">
+            <a href="{{ url_for('index') }}" class="nav-link"><i class="fas fa-microscope"></i> Detection</a>
+            <a href="{{ url_for('dashboard') }}" class="nav-link"><i class="fas fa-th-large"></i> My Dashboard</a>
+            <a href="{{ url_for('doctor_dashboard') }}" class="nav-link active"><i class="fas fa-user-md"></i> Doctor View</a>
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-link"><i class="fas fa-chart-pie"></i> Admin</a>
+            {% endif %}
+            <div class="nav-user">
+                <span><i class="fas fa-user-md"></i> Dr. {{ current_user.username }}</span>
+                <a href="{{ url_for('auth.logout') }}" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="dash-hero" style="background:linear-gradient(135deg,#EDF6FF,#fff,#FDE8F4)">
+        <div class="container">
+            <h1><i class="fas fa-user-md"></i> Doctor Dashboard</h1>
+            <p>Review patient scans and add clinical notes</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container" style="max-width:1100px;">
+
+            <!-- Filters -->
+            <form method="GET" class="filter-bar">
+                <div class="filter-input">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="search" placeholder="Search by patient name..."
+                           value="{{ search }}">
+                </div>
+                <select name="diagnosis" class="filter-select">
+                    <option value="">All Diagnoses</option>
+                    <option value="Benign" {% if diag_filter=='Benign' %}selected{% endif %}>Benign</option>
+                    <option value="Malignant" {% if diag_filter=='Malignant' %}selected{% endif %}>Malignant</option>
+                </select>
+                <button type="submit" class="btn btn-primary" style="padding:10px 24px;">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                {% if search or diag_filter %}
+                <a href="{{ url_for('doctor_dashboard') }}" class="btn-clear">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+                {% endif %}
+            </form>
+
+            <p class="result-count">{{ predictions|length }} record(s) found</p>
+
+            {% if predictions %}
+            <div class="doctor-table-wrap">
+                <table class="doctor-table">
+                    <thead>
+                        <tr>
+                            <th>Scan</th>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th>Diagnosis</th>
+                            <th>Benign %</th>
+                            <th>Malignant %</th>
+                            <th>Doctor Notes</th>
+                            <th>Report</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pred in predictions %}
+                        <tr>
+                            <td>
+                                {% if pred.image_filename %}
+                                <img src="{{ url_for('static', filename='uploads/' + pred.image_filename) }}"
+                                     class="table-thumb" alt="scan">
+                                {% else %}
+                                <div class="table-thumb-empty"><i class="fas fa-x-ray"></i></div>
+                                {% endif %}
+                            </td>
+                            <td class="patient-cell">
+                                <span class="patient-name">{{ pred.user.username }}</span>
+                                <span class="patient-email">{{ pred.user.email }}</span>
+                            </td>
+                            <td class="date-cell">{{ pred.created_at.strftime('%d %b %Y') }}<br>
+                                <small>{{ pred.created_at.strftime('%H:%M') }}</small></td>
+                            <td>
+                                <span class="diag-badge-sm {{ pred.diagnosis.lower() }}">{{ pred.diagnosis }}</span>
+                            </td>
+                            <td class="pct-cell benign-text">{{ pred.benign }}%</td>
+                            <td class="pct-cell malignant-text">{{ pred.malignant }}%</td>
+                            <td class="notes-cell">
+                                <textarea class="note-input" id="note-{{ pred.id }}"
+                                          placeholder="Add clinical notes...">{{ pred.doctor_notes or '' }}</textarea>
+                                <button class="btn-save-note" onclick="saveNote({{ pred.id }})">
+                                    <i class="fas fa-save"></i> Save
+                                </button>
+                                <span class="save-status" id="status-{{ pred.id }}"></span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('download_report', prediction_id=pred.id) }}"
+                                   class="btn-action btn-pdf" title="Download PDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <h3>No records found</h3>
+                <p>{% if search or diag_filter %}Try adjusting your filters.{% else %}No patient scans have been submitted yet.{% endif %}</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>BreastGuard AI &mdash; Not a substitute for professional medical diagnosis.</p>
+    </footer>
+
+    <script>
+        async function saveNote(predId) {
+            const notes = document.getElementById('note-' + predId).value;
+            const status = document.getElementById('status-' + predId);
+            status.textContent = 'Saving...';
+            status.className = 'save-status saving';
+            try {
+                const res = await fetch('/api/add-note/' + predId, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes })
+                });
+                const data = await res.json();
+                status.textContent = data.status === 'saved' ? '✓ Saved' : 'Error';
+                status.className = 'save-status ' + (data.status === 'saved' ? 'saved' : 'error');
+                setTimeout(() => { status.textContent = ''; }, 3000);
+            } catch {
+                status.textContent = 'Error';
+                status.className = 'save-status error';
+            }
+        }
+    </script>
+</body>
+</html>

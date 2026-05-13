@@ -13,15 +13,27 @@
 
     <!-- Navigation -->
     <nav class="navbar">
-        <div class="nav-brand">
+        <a href="{{ url_for('index') }}" class="nav-brand">
             <i class="fas fa-ribbon"></i>
             <span>BreastGuard AI</span>
-        </div>
+        </a>
         <div class="nav-links">
             <a href="#upload-section" class="nav-link">Detection</a>
+            <a href="{{ url_for('compare') }}" class="nav-link"><i class="fas fa-columns"></i> Compare</a>
+            <a href="{{ url_for('dashboard') }}" class="nav-link"><i class="fas fa-th-large"></i> Dashboard</a>
+            {% if current_user.role in ('doctor', 'admin') %}
+            <a href="{{ url_for('doctor_dashboard') }}" class="nav-link"><i class="fas fa-user-md"></i> Doctor</a>
+            {% endif %}
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-link"><i class="fas fa-chart-pie"></i> Admin</a>
+            {% endif %}
             <a href="#" class="nav-link" id="nav-chat-btn">
-                <i class="fas fa-comments"></i> Chat Assistant
+                <i class="fas fa-comments"></i> Chat
             </a>
+            <div class="nav-user">
+                <span><i class="fas fa-user-circle"></i> {{ current_user.username }}</span>
+                <a href="{{ url_for('auth.logout') }}" class="btn-logout"><i class="fas fa-sign-out-alt"></i></a>
+            </div>
         </div>
     </nav>
 
@@ -29,7 +41,7 @@
     <section class="hero">
         <div class="hero-content">
             <h1>AI-Powered Breast Cancer Detection</h1>
-            <p>Upload a mammogram image for instant AI analysis powered by DenseNet201 deep learning, with health insights from Gemini AI.</p>
+            <p>Upload a mammogram image for instant AI analysis powered by DenseNet201 deep learning, with Grad-CAM visualization and health insights from Gemini AI.</p>
             <a href="#upload-section" class="btn btn-primary">
                 <i class="fas fa-microscope"></i> Start Analysis
             </a>
@@ -67,10 +79,9 @@
                 <i class="fas fa-search-plus"></i> Analyze Image
             </button>
 
-            <!-- Loading -->
             <div class="loader hidden" id="loader">
                 <div class="spinner"></div>
-                <p>Analyzing mammogram...</p>
+                <p>Analyzing mammogram &amp; generating Grad-CAM...</p>
             </div>
         </div>
     </section>
@@ -81,15 +92,12 @@
             <h2 class="section-title">Detection Results</h2>
 
             <div class="results-grid">
-                <!-- Diagnosis Card -->
                 <div class="result-card diagnosis-card" id="diagnosis-card">
                     <div class="diagnosis-badge" id="diagnosis-badge">
                         <i class="fas fa-stethoscope"></i>
                         <span id="diagnosis-text">--</span>
                     </div>
                 </div>
-
-                <!-- Benign Card -->
                 <div class="result-card">
                     <h3>Benign</h3>
                     <div class="progress-ring-container">
@@ -104,8 +112,6 @@
                     </div>
                     <p class="result-label">Non-cancerous probability</p>
                 </div>
-
-                <!-- Malignant Card -->
                 <div class="result-card">
                     <h3>Malignant</h3>
                     <div class="progress-ring-container">
@@ -122,16 +128,37 @@
                 </div>
             </div>
 
-            <!-- Detailed Breakdown -->
+            <!-- Grad-CAM Heatmap -->
+            <div class="heatmap-card hidden" id="heatmap-card">
+                <h3><i class="fas fa-fire"></i> Grad-CAM Explainability</h3>
+                <p class="heatmap-subtitle">Red/yellow regions show where the AI focused to make its prediction</p>
+                <div class="heatmap-images">
+                    <div class="heatmap-img-wrap">
+                        <img id="original-img-display" src="" alt="Original">
+                        <span class="img-caption">Original Mammogram</span>
+                    </div>
+                    <div class="heatmap-img-wrap">
+                        <img id="heatmap-img" src="" alt="Heatmap">
+                        <span class="img-caption">Grad-CAM Heatmap</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail Breakdown -->
             <div class="detail-card">
                 <h3><i class="fas fa-chart-bar"></i> Detailed Breakdown by Density</h3>
                 <div class="detail-bars" id="detail-bars"></div>
             </div>
 
-            <!-- Get AI Summary Button -->
-            <button class="btn btn-gemini" id="summary-btn">
-                <i class="fas fa-brain"></i> Get AI Health Summary from Gemini
-            </button>
+            <!-- Action Buttons -->
+            <div class="result-actions">
+                <button class="btn btn-gemini" id="summary-btn">
+                    <i class="fas fa-brain"></i> Get AI Health Summary
+                </button>
+                <a href="#" class="btn btn-pdf-dl hidden" id="download-report-btn">
+                    <i class="fas fa-file-pdf"></i> Download PDF Report
+                </a>
+            </div>
         </div>
     </section>
 

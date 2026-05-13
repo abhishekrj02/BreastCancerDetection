@@ -19,9 +19,14 @@ const chatMessages = document.getElementById("chat-messages");
 const chatInput = document.getElementById("chat-input");
 const chatSend = document.getElementById("chat-send");
 const navChatBtn = document.getElementById("nav-chat-btn");
+const heatmapCard = document.getElementById("heatmap-card");
+const heatmapImg = document.getElementById("heatmap-img");
+const originalImgDisplay = document.getElementById("original-img-display");
+const downloadReportBtn = document.getElementById("download-report-btn");
 
 let selectedFile = null;
 let lastResults = null;
+let lastPredictionId = null;
 let chatHistory = [];
 
 // ─── File Upload ───
@@ -78,6 +83,9 @@ function clearFile() {
     analyzeBtn.disabled = true;
     resultsSection.classList.add("hidden");
     summarySection.classList.add("hidden");
+    heatmapCard.classList.add("hidden");
+    downloadReportBtn.classList.add("hidden");
+    lastPredictionId = null;
 }
 
 // ─── Prediction ───
@@ -89,6 +97,8 @@ analyzeBtn.addEventListener("click", async () => {
     loader.classList.remove("hidden");
     resultsSection.classList.add("hidden");
     summarySection.classList.add("hidden");
+    heatmapCard.classList.add("hidden");
+    downloadReportBtn.classList.add("hidden");
 
     const formData = new FormData();
     formData.append("image", selectedFile);
@@ -103,7 +113,9 @@ analyzeBtn.addEventListener("click", async () => {
         }
 
         lastResults = data;
+        lastPredictionId = data.prediction_id;
         displayResults(data);
+
     } catch (err) {
         alert("Failed to analyze image. Please try again.");
         console.error(err);
@@ -129,7 +141,6 @@ function displayResults(data) {
     // Detail bars
     const barsContainer = document.getElementById("detail-bars");
     barsContainer.innerHTML = "";
-
     for (const [name, value] of Object.entries(data.detailed)) {
         const isBenign = name.toLowerCase().includes("benign");
         const item = document.createElement("div");
@@ -145,8 +156,6 @@ function displayResults(data) {
             </div>
         `;
         barsContainer.appendChild(item);
-
-        // Animate bar fill
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 item.querySelector(".detail-bar-fill").style.width = value + "%";
@@ -154,7 +163,22 @@ function displayResults(data) {
         });
     }
 
-    // Scroll to results
+    // Grad-CAM heatmap
+    if (data.heatmap_b64) {
+        heatmapCard.classList.remove("hidden");
+        heatmapImg.src = data.heatmap_b64;
+        // Show original image in the heatmap card too
+        if (previewImg.src) {
+            originalImgDisplay.src = previewImg.src;
+        }
+    }
+
+    // PDF download button
+    if (data.prediction_id) {
+        downloadReportBtn.href = "/download-report/" + data.prediction_id;
+        downloadReportBtn.classList.remove("hidden");
+    }
+
     resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -171,7 +195,6 @@ function animateRing(ringId, pctId, value) {
         });
     });
 
-    // Animate number
     let current = 0;
     const target = Math.round(value * 10) / 10;
     const step = target / 40;
@@ -196,12 +219,14 @@ summaryBtn.addEventListener("click", async () => {
     summarySection.scrollIntoView({ behavior: "smooth" });
 
     try {
+        const payload = { ...lastResults };
+        if (lastPredictionId) payload.prediction_id = lastPredictionId;
+
         const res = await fetch("/get-summary", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(lastResults),
+            body: JSON.stringify(payload),
         });
-
         const data = await res.json();
 
         if (data.error) {
@@ -224,9 +249,7 @@ chatToggle.addEventListener("click", toggleChat);
 chatClose.addEventListener("click", toggleChat);
 navChatBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    if (chatPanel.classList.contains("hidden")) {
-        toggleChat();
-    }
+    if (chatPanel.classList.contains("hidden")) toggleChat();
 });
 
 function toggleChat() {
@@ -245,28 +268,21 @@ async function sendChatMessage() {
     const message = chatInput.value.trim();
     if (!message) return;
 
-    // Add user message
     appendChatMsg("user", message);
     chatInput.value = "";
-
-    // Add to history
     chatHistory.push({ role: "user", content: message });
 
-    // Show typing indicator
     const typingEl = appendTyping();
 
     try {
         const payload = { message, history: chatHistory.slice(0, -1) };
-        if (lastResults) {
-            payload.detectionResults = lastResults;
-        }
+        if (lastResults) payload.detectionResults = lastResults;
 
         const res = await fetch("/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
-
         const data = await res.json();
         typingEl.remove();
 
@@ -286,16 +302,13 @@ async function sendChatMessage() {
 function appendChatMsg(role, content, isMarkdown = false) {
     const msg = document.createElement("div");
     msg.className = "chat-msg " + role;
-
     const bubble = document.createElement("div");
     bubble.className = "chat-msg-content";
-
     if (isMarkdown) {
         bubble.innerHTML = marked.parse(content);
     } else {
         bubble.textContent = content;
     }
-
     msg.appendChild(bubble);
     chatMessages.appendChild(msg);
     chatMessages.scrollTop = chatMessages.scrollHeight;

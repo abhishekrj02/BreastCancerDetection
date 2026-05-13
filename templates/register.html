@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — BreastGuard AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-page">
+
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fas fa-ribbon"></i>
+                </div>
+                <h1>BreastGuard AI</h1>
+                <p>Create your account</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% for category, message in messages %}
+                <div class="flash-msg flash-{{ category }}">
+                    <i class="fas fa-{% if category == 'error' %}exclamation-circle{% elif category == 'success' %}check-circle{% else %}info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+              {% endfor %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.register') }}" class="auth-form">
+                <div class="form-group">
+                    <label for="username"><i class="fas fa-user"></i> Full Name</label>
+                    <input type="text" id="username" name="username" placeholder="Your name" required
+                           value="{{ request.form.get('username', '') }}">
+                </div>
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" required
+                           value="{{ request.form.get('email', '') }}">
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Min. 6 characters" required>
+                        <button type="button" class="toggle-pwd" onclick="togglePwd('password','eye1')">
+                            <i class="fas fa-eye" id="eye1"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password"><i class="fas fa-lock"></i> Confirm Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Repeat password" required>
+                        <button type="button" class="toggle-pwd" onclick="togglePwd('confirm_password','eye2')">
+                            <i class="fas fa-eye" id="eye2"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-user-tag"></i> Account Type</label>
+                    <div class="role-selector">
+                        <label class="role-option" id="role-patient">
+                            <input type="radio" name="role" value="patient" checked onchange="selectRole(this)">
+                            <div class="role-card">
+                                <i class="fas fa-user-injured"></i>
+                                <span>Patient</span>
+                                <small>Upload & analyze scans</small>
+                            </div>
+                        </label>
+                        <label class="role-option" id="role-doctor">
+                            <input type="radio" name="role" value="doctor" onchange="selectRole(this)">
+                            <div class="role-card">
+                                <i class="fas fa-user-md"></i>
+                                <span>Doctor</span>
+                                <small>Review all patient cases</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePwd(id, iconId) {
+            const pwd = document.getElementById(id);
+            const icon = document.getElementById(iconId);
+            if (pwd.type === 'password') {
+                pwd.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                pwd.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        function selectRole(radio) {
+            document.querySelectorAll('.role-option').forEach(el => el.classList.remove('selected'));
+            radio.closest('.role-option').classList.add('selected');
+        }
+
+        // Set initial selection
+        document.querySelector('input[name="role"]:checked').closest('.role-option').classList.add('selected');
+    </script>
+</body>
+</html>
